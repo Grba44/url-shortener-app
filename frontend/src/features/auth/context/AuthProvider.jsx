@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { getMeRequest } from "../api/api";
-import { clearToken, getToken, setToken } from "../../../shared/api/tokenStorage";
+import { getMeRequest, logoutRequest } from "../api/api";
+import {
+  clearToken,
+  getToken,
+  setToken,
+} from "../../../shared/api/tokenStorage";
 import { AuthContext } from "./AuthContext";
 
 export function AuthProvider({ children }) {
@@ -43,9 +47,16 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
-    clearToken();
-    setUser(null);
+  const logout = async () => {
+    try {
+      await logoutRequest();
+    } catch {
+      // Local logout must succeed even when the server doesn't respond; token then
+      // remains valid on the server until it expires.
+    } finally {
+      clearToken();
+      setUser(null);
+    }
   };
 
   const value = useMemo(

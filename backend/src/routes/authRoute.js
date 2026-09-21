@@ -1,10 +1,10 @@
 import express from "express";
 import bcrpyt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { validateUser } from "../middleware/authMiddleware.js";
 import { isValidEmail, isValidPassword } from "../utils/validators.js";
 import { emailRateLimit } from "../middleware/rateLimiter.js";
+import { signToken } from "../utils/token.js";
 
 const router = express.Router();
 
@@ -34,9 +34,7 @@ router.post("/signup", async (req, res) => {
       },
     });
 
-    const token = jwt.sign({ userId: newUser.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = signToken(newUser.id);
 
     res.status(201).json({ token });
   } catch (error) {
@@ -79,9 +77,7 @@ router.post("/login", emailRateLimit, async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
 
-    const token = jwt.sign({ userId: served.id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = signToken(served.id);
 
     res.status(200).json({ token });
   } catch (error) {
@@ -108,6 +104,23 @@ router.get("/me", validateUser, async (req, res) => {
     }
 
     res.status(200).json({ user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.post("/logout", validateUser, async (req, res) => {
+  try {
+    const { jti, exp } = req.user;
+
+    await prisma.revokedToken.upsert({
+      where: { jti },
+      update: {},
+      create: { jti, expiresAt: new Date(exp * 1000) },
+    });
+
+    res.status(204).end();
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

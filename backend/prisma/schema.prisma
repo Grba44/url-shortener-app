@@ -16,7 +16,7 @@ model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   password  String
-  username  String
+  username  String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,4 +32,11 @@ model Link {
   updatedAt   DateTime @updatedAt
 
   owner User @relation(fields: [ownerId], references: [id])
+}
+
+model RevokedToken {
+  jti       String   @id
+  expiresAt DateTime
+
+  @@index([expiresAt])
 }
