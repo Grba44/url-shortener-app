@@ -1,11 +1,36 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
+import authRouter from "./routes/authRoute.js";
+import { rateLimit } from "express-rate-limit";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  })
+);
+
+const trustProxy = process.env.TRUST_PROXY
+  ? Number(process.env.TRUST_PROXY)
+  : false;
+
+app.set("trust proxy", trustProxy);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 50,
+  message: "Limit reached",
+});
+
+app.use("/auth/login", limiter);
+app.use("/auth/signup", limiter);
+
+app.use(express.json());
+
 const PORT = process.env.PORT || "3000";
 
-app.get("/", (req, res) => {
-  res.json({ res: "Uspesno" });
-});
+app.use("/auth", authRouter);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -7,4 +7,4 @@ COPY prisma7.config.ts ./
 RUN npx prisma generate
 COPY . .
 EXPOSE 3000
-CMD ["node", "--watch", "src/index.js"]
+CMD ["npx", "nodemon", "--legacy-watch", "src/index.js"]
