@@ -1,5 +1,8 @@
 const limiterMap = new Map();
 
+// Test-only escape hatch: tests need a way to reset the map between cases
+export const _resetRateLimiter = () => limiterMap.clear();
+
 const cleanupExpiredEntries = () => {
   const now = Date.now();
 
