@@ -21,6 +21,14 @@ describe("isValidEmail", () => {
   it("returns false for an empty string", () => {
     expect(isValidEmail("")).toBe(false);
   });
+
+  it("returns false for an email containing uppercase letters", () => {
+    expect(isValidEmail("User@Example.com")).toBe(false);
+  });
+
+  it("returns false when a non-string value is provided", () => {
+    expect(isValidEmail(123)).toBe(false);
+  });
 });
 
 describe("isValidPassword", () => {

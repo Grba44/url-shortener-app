@@ -3,6 +3,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const validateEmail = (email) => {
   if (!email) return "Email is required.";
   if (!EMAIL_REGEX.test(email)) return "Invalid email.";
+  if (email !== email.toLowerCase()) return "Email must be lowercase.";
   return undefined;
 };
 
@@ -33,7 +34,8 @@ export const validatePassword = (password) => {
   if (!/[A-Z]/.test(password)) missing.push("include an uppercase letter");
   if (!/[a-z]/.test(password)) missing.push("include a lowercase letter");
   if (!/\d/.test(password)) missing.push("include a digit");
-  if (!/[^A-Za-z0-9]/.test(password)) missing.push("include a special character");
+  if (!/[^A-Za-z0-9]/.test(password))
+    missing.push("include a special character");
 
   if (missing.length === 0) return undefined;
 
@@ -47,5 +49,10 @@ export const validatePassword = (password) => {
 
 export const validatePasswordsMatch = (password, confirmPassword) => {
   if (confirmPassword !== password) return "Passwords don't match.";
+  return undefined;
+};
+
+export const validateLoginPassword = (password) => {
+  if (!password) return "Password is required.";
   return undefined;
 };

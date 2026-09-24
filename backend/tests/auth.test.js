@@ -157,11 +157,13 @@ describe("POST /auth/signup", () => {
 
     //Act
     await request(app).post("/auth/signup").send(payload);
-    const res = await request(app).post("/auth/signup").send({
-      ...payload,
-      email: "other@example.com",
-      username: "testuser",
-    });
+    const res = await request(app)
+      .post("/auth/signup")
+      .send({
+        ...payload,
+        email: "other@example.com",
+        username: "testuser",
+      });
 
     //Assert
     expect(res.status).toBe(409);

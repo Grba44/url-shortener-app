@@ -1,33 +1,62 @@
 import { useRef, useState } from "react";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { HCAPTCHA_SITE_KEY, loginRequest } from "../api/api";
+import { validateEmail, validateLoginPassword } from "../utils/validators";
 import Card from "../../../shared/components/Card";
 import Input from "../../../shared/components/Input";
 import Button from "../../../shared/components/Button";
 import FormError from "../../../shared/components/FormError";
 
+const FIELDS = ["email", "password"];
+
 function LoginForm({ onSuccess, onSwitchToSignUp }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [values, setValues] = useState({ email: "", password: "" });
+  const [touched, setTouched] = useState({});
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const captchaRef = useRef(null);
 
+  // Mirrors what POST /auth/login actually checks: email format + lowercase,
+  // and that a password was entered. Login never re-validates password
+  // strength, so this is deliberately lighter than the signup form.
+  const validate = () => {
+    const errors = {};
+
+    const emailError = validateEmail(values.email);
+    if (emailError) errors.email = emailError;
+
+    const passwordError = validateLoginPassword(values.password);
+    if (passwordError) errors.password = passwordError;
+
+    return errors;
+  };
+
+  const errors = validate();
+
+  const handleChange = (field) => (e) => {
+    setValues((prev) => ({ ...prev, [field]: e.target.value }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const fieldError = (field) => (touched[field] ? errors[field] : undefined);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setTouched(Object.fromEntries(FIELDS.map((field) => [field, true])));
 
-    if (!email || !password) {
-      setError("Please fill in both email and password.");
-      return;
-    }
+    if (Object.keys(errors).length > 0) return;
 
     setIsSubmitting(true);
 
     try {
-      const data = await loginRequest({ email, password, captchaToken });
+      const data = await loginRequest({ ...values, captchaToken });
       await onSuccess?.(data);
     } catch (err) {
       if (err.response?.status === 429) {
@@ -61,8 +90,10 @@ function LoginForm({ onSuccess, onSwitchToSignUp }) {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={values.email}
+          onChange={handleChange("email")}
+          onBlur={handleBlur("email")}
+          error={fieldError("email")}
         />
 
         <Input
@@ -70,8 +101,10 @@ function LoginForm({ onSuccess, onSwitchToSignUp }) {
           type="password"
           autoComplete="current-password"
           placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          value={values.password}
+          onChange={handleChange("password")}
+          onBlur={handleBlur("password")}
+          error={fieldError("password")}
         />
 
         {needsCaptcha && (

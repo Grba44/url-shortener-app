@@ -1,6 +1,10 @@
 export const isValidEmail = (email) => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return regex.test(email);
+  return (
+    typeof email === "string" &&
+    regex.test(email) &&
+    email === email.toLowerCase()
+  );
 };
 
 export const isValidPassword = (password) => {
