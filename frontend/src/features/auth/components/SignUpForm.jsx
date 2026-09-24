@@ -11,45 +11,64 @@ import Input from "../../../shared/components/Input";
 import Button from "../../../shared/components/Button";
 import FormError from "../../../shared/components/FormError";
 
+const FIELDS = ["email", "username", "password", "confirmPassword"];
+
 function SignUpForm({ onSuccess, onSwitchToLogin }) {
-  const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [values, setValues] = useState({
+    email: "",
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [touched, setTouched] = useState({});
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const errors = {};
 
-    const emailError = validateEmail(email);
+    const emailError = validateEmail(values.email);
     if (emailError) errors.email = emailError;
 
-    const usernameError = validateUsername(username);
+    const usernameError = validateUsername(values.username);
     if (usernameError) errors.username = usernameError;
 
-    const passwordError = validatePassword(password);
+    const passwordError = validatePassword(values.password);
     if (passwordError) errors.password = passwordError;
 
-    const confirmPasswordError = validatePasswordsMatch(password, confirmPassword);
+    const confirmPasswordError = validatePasswordsMatch(
+      values.password,
+      values.confirmPassword,
+    );
     if (confirmPasswordError) errors.confirmPassword = confirmPasswordError;
 
     return errors;
   };
 
+  const errors = validate();
+
+  const handleChange = (field) => (e) => {
+    setValues((prev) => ({ ...prev, [field]: e.target.value }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field) => () => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const fieldError = (field) => (touched[field] ? errors[field] : undefined);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setTouched(Object.fromEntries(FIELDS.map((field) => [field, true])));
 
-    const errors = validate();
-    setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
     setIsSubmitting(true);
 
     try {
-      const data = await signupRequest({ email, username, password });
+      const data = await signupRequest(values);
       await onSuccess?.(data);
     } catch (err) {
       setError(err.response?.data?.message || "Sign up error.");
@@ -76,9 +95,10 @@ function SignUpForm({ onSuccess, onSwitchToLogin }) {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={fieldErrors.email}
+          value={values.email}
+          onChange={handleChange("email")}
+          onBlur={handleBlur("email")}
+          error={fieldError("email")}
         />
 
         <Input
@@ -86,9 +106,10 @@ function SignUpForm({ onSuccess, onSwitchToLogin }) {
           type="text"
           autoComplete="username"
           placeholder="yourname"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          error={fieldErrors.username}
+          value={values.username}
+          onChange={handleChange("username")}
+          onBlur={handleBlur("username")}
+          error={fieldError("username")}
         />
 
         <Input
@@ -96,9 +117,10 @@ function SignUpForm({ onSuccess, onSwitchToLogin }) {
           type="password"
           autoComplete="new-password"
           placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          error={fieldErrors.password}
+          value={values.password}
+          onChange={handleChange("password")}
+          onBlur={handleBlur("password")}
+          error={fieldError("password")}
         />
 
         <Input
@@ -106,9 +128,10 @@ function SignUpForm({ onSuccess, onSwitchToLogin }) {
           type="password"
           autoComplete="new-password"
           placeholder="••••••••"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          error={fieldErrors.confirmPassword}
+          value={values.confirmPassword}
+          onChange={handleChange("confirmPassword")}
+          onBlur={handleBlur("confirmPassword")}
+          error={fieldError("confirmPassword")}
         />
 
         <FormError>{error}</FormError>
