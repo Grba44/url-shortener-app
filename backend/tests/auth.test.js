@@ -86,7 +86,7 @@ describe("POST /auth/signup", () => {
     expect(res.body.message).toBe("Invalid password.");
   });
 
-  it("returns 409 when user with provided email already exists", async () => {
+  it("returns 409 when user with provided email or username already exists", async () => {
     //Arrange
     const payload = {
       email: "user@example.com",
@@ -101,7 +101,9 @@ describe("POST /auth/signup", () => {
     //Assert
     expect(res.status).toBe(409);
     expect(res.body).toHaveProperty("message");
-    expect(res.body.message).toBe("User with provided email already exists.");
+    expect(res.body.message).toBe(
+      "User with provided email or username already exists.",
+    );
   });
 });
 

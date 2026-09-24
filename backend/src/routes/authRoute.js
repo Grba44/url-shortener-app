@@ -39,9 +39,9 @@ router.post("/signup", async (req, res) => {
     res.status(201).json({ token });
   } catch (error) {
     if (error.code === "P2002") {
-      return res
-        .status(409)
-        .json({ message: "User with provided email already exists." });
+      return res.status(409).json({
+        message: "User with provided email or username already exists.",
+      });
     }
 
     console.error(error);
