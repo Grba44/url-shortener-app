@@ -2,7 +2,11 @@ import express from "express";
 import bcrpyt from "bcrypt";
 import { prisma } from "../lib/prisma.js";
 import { validateUser } from "../middleware/authMiddleware.js";
-import { isValidEmail, isValidPassword } from "../utils/validators.js";
+import {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+} from "../utils/validators.js";
 import { emailRateLimit } from "../middleware/rateLimiter.js";
 import { signToken } from "../utils/token.js";
 
@@ -24,13 +28,18 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "Invalid password." });
     }
 
+    if (!isValidUsername(username)) {
+      return res.status(400).json({ message: "Invalid username." });
+    }
+
     const hashedPassword = await bcrpyt.hash(password, 10);
 
     const newUser = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        username,
+        username: username.trim(),
+        usernameLower: username.toLowerCase(),
       },
     });
 

@@ -13,6 +13,7 @@ async function main() {
       email: process.env.SEED_EMAIL,
       password: hashedPassword,
       username: process.env.SEED_USERNAME,
+      usernameLower: process.env.SEED_USERNAME.toLowerCase(),
     },
   });
 

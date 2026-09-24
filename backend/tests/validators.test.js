@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { isValidEmail, isValidPassword } from "../src/utils/validators.js";
+import {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+} from "../src/utils/validators.js";
 
 describe("isValidEmail", () => {
   it("returns true for a valid email", () => {
@@ -60,5 +64,35 @@ describe("isValidPassword", () => {
         "Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1!Mv1",
       ),
     ).toBe(true);
+  });
+});
+
+describe("isValidUsername", () => {
+  it("returns true when username is not an empty string or only space characters", () => {
+    expect(isValidUsername("_valid-Username0123_")).toBe(true);
+  });
+
+  it("returns false when username is an empty string", () => {
+    expect(isValidUsername("")).toBe(false);
+  });
+
+  it("returns false when username is only space characters", () => {
+    expect(isValidUsername("   ")).toBe(false);
+  });
+
+  it("returns false when a number is provided for the username", () => {
+    expect(isValidUsername(123)).toBe(false);
+  });
+
+  it("returns false when username containst disallowed characters", () => {
+    expect(isValidUsername("test!")).toBe(false);
+  });
+
+  it("returns false when username is longer then maximum allowed length", () => {
+    expect(isValidUsername("testtesttesttesttesttesttesttest")).toBe(false);
+  });
+
+  it("returns false when username is shorter then minimum length allowed", () => {
+    expect(isValidUsername("te")).toBe(false);
   });
 });

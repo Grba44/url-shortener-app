@@ -86,7 +86,24 @@ describe("POST /auth/signup", () => {
     expect(res.body.message).toBe("Invalid password.");
   });
 
-  it("returns 409 when user with provided email or username already exists", async () => {
+  it("returns 400 and invalid username message when username is not valid", async () => {
+    //Arrange
+    const payload = {
+      email: "user@example.com",
+      username: " ",
+      password: "Mv1!Mv1!",
+    };
+
+    //Act
+    const res = await request(app).post("/auth/signup").send(payload);
+
+    //Assert
+    expect(res.status).toBe(400);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toBe("Invalid username.");
+  });
+
+  it("returns 409 when user with provided email already exists", async () => {
     //Arrange
     const payload = {
       email: "user@example.com",
@@ -96,7 +113,9 @@ describe("POST /auth/signup", () => {
 
     //Act
     await request(app).post("/auth/signup").send(payload);
-    const res = await request(app).post("/auth/signup").send(payload);
+    const res = await request(app)
+      .post("/auth/signup")
+      .send({ ...payload, username: "SecondUser" });
 
     //Assert
     expect(res.status).toBe(409);
@@ -104,6 +123,70 @@ describe("POST /auth/signup", () => {
     expect(res.body.message).toBe(
       "User with provided email or username already exists.",
     );
+  });
+
+  it("returns 409 when user with provided username already exists", async () => {
+    //Arrange
+    const payload = {
+      email: "user@example.com",
+      username: "TestUser",
+      password: "Mv1!Mv1!",
+    };
+
+    //Act
+    await request(app).post("/auth/signup").send(payload);
+    const res = await request(app)
+      .post("/auth/signup")
+      .send({ ...payload, email: "other@example.com" });
+
+    //Assert
+    expect(res.status).toBe(409);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toBe(
+      "User with provided email or username already exists.",
+    );
+  });
+
+  it("returns 409 when username already exists in a different case", async () => {
+    //Arrange
+    const payload = {
+      email: "user@example.com",
+      username: "TestUser",
+      password: "Mv1!Mv1!",
+    };
+
+    //Act
+    await request(app).post("/auth/signup").send(payload);
+    const res = await request(app).post("/auth/signup").send({
+      ...payload,
+      email: "other@example.com",
+      username: "testuser",
+    });
+
+    //Assert
+    expect(res.status).toBe(409);
+    expect(res.body).toHaveProperty("message");
+    expect(res.body.message).toBe(
+      "User with provided email or username already exists.",
+    );
+  });
+
+  it("preserves the casing the user signed up with", async () => {
+    //Arrange
+    const payload = {
+      email: "user@example.com",
+      username: "TestUser",
+      password: "Mv1!Mv1!",
+    };
+
+    //Act
+    const signupRes = await request(app).post("/auth/signup").send(payload);
+    const meRes = await request(app)
+      .get("/auth/me")
+      .set("Authorization", `Bearer ${signupRes.body.token}`);
+
+    //Assert
+    expect(meRes.body.user.username).toBe("TestUser");
   });
 });
 

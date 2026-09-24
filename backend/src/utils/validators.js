@@ -18,3 +18,7 @@ export const isValidPassword = (password) => {
     hasSpecial
   );
 };
+
+export const isValidUsername = (username) => {
+  return typeof username === "string" && /^[a-zA-Z0-9_-]{3,20}$/.test(username);
+};

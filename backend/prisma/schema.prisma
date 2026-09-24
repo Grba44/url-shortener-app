@@ -13,12 +13,16 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  username  String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  password      String
+  username      String
+  // Lowercased mirror of `username`, kept in sync by the app on write.
+  // Enforces case-insensitive uniqueness (so "Test" and "test" collide)
+  // while `username` still stores whatever casing the user signed up with.
+  usernameLower String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   links Link[]
 }
