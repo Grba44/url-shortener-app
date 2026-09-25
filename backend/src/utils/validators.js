@@ -26,3 +26,22 @@ export const isValidPassword = (password) => {
 export const isValidUsername = (username) => {
   return typeof username === "string" && /^[a-zA-Z0-9_-]{3,20}$/.test(username);
 };
+
+export const isValidUrl = (urlString) => {
+  if (typeof urlString !== "string") {
+    return false;
+  }
+
+  const trimmedUrl = urlString.trim();
+
+  if (trimmedUrl.length >= 2048) {
+    return false;
+  }
+
+  try {
+    const url = new URL(trimmedUrl);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (_) {
+    return false;
+  }
+};

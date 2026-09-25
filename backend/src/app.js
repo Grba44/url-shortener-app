@@ -3,6 +3,7 @@ import "./lib/checkEnv.js";
 import express from "express";
 import cors from "cors";
 import authRouter from "./routes/authRoute.js";
+import linkRouter from "./routes/linkRoute.js";
 import { rateLimit } from "express-rate-limit";
 
 const app = express();
@@ -31,5 +32,8 @@ app.use("/auth/signup", limiter);
 app.use(express.json());
 
 app.use("/auth", authRouter);
+app.use("/links", linkRouter);
+
+app.get("/:shortCode", async (req, res) => {});
 
 export default app;

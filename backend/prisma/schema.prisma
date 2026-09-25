@@ -36,6 +36,8 @@ model Link {
   updatedAt   DateTime @updatedAt
 
   owner User @relation(fields: [ownerId], references: [id])
+
+  @@unique([ownerId, originalUrl])
 }
 
 model RevokedToken {
