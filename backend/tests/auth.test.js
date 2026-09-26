@@ -305,7 +305,7 @@ describe("GET /auth/me", () => {
 
   it("returns 401 when incorrect token provided in authorization header", async () => {
     //Arrange
-    const token = "incorrect token bearer string";
+    const token = "incorrectTokenBearerString";
 
     //Act
     const res = await request(app)

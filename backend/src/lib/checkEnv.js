@@ -5,7 +5,7 @@ const REQUIRED_ENV = [
   "JWT_SECRET",
   "HCAPTCHA_SECRET",
   "CORS_ORIGIN",
-  "BASE_URL",
+  "APP_BASE_URL",
 ];
 
 const missingEnv = REQUIRED_ENV.filter((name) => !process.env[name]?.trim());
@@ -16,8 +16,8 @@ if (missingEnv.length > 0) {
   );
 }
 
-if (process.env.BASE_URL.endsWith("/")) {
+if (process.env.APP_BASE_URL.endsWith("/")) {
   throw new Error(
-    "Configuration Error: BASE_URL must not end with a trailing slash (/).",
+    "Configuration Error: APP_BASE_URL must not end with a trailing slash (/).",
   );
 }

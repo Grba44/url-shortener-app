@@ -18,8 +18,8 @@ export const registerUser = async (customPayload = {}) => {
   return payload;
 };
 
-export const registerAndLogin = async () => {
-  const payload = await registerUser();
+export const registerAndLogin = async (customPayload = {}) => {
+  const payload = await registerUser(customPayload);
 
   const res = await request(app).post("/auth/login").send(payload);
 

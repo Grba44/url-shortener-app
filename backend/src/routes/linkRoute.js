@@ -23,7 +23,7 @@ router.post("/", validateUser, async (req, res) => {
         const shortCode = generateShortCode();
         link = await prisma.link.create({
           data: {
-            originalUrl: originalUrl,
+            originalUrl: originalUrl.trim(),
             shortCode,
             ownerId: id,
           },
@@ -54,7 +54,7 @@ router.post("/", validateUser, async (req, res) => {
       });
     }
 
-    const shortUrl = `${process.env.BASE_URL}/${link.shortCode}`;
+    const shortUrl = `${process.env.APP_BASE_URL}/${link.shortCode}`;
 
     res.status(201).json({ link, shortUrl });
   } catch (error) {
