@@ -244,7 +244,119 @@ describe("POST /links/ short code retry logic", () => {
   });
 });
 
-// describe("GET /links/", () => {});
+describe("GET /links/", () => {
+  const createLink = (overrides = {}) =>
+    prisma.link.create({
+      data: {
+        originalUrl: "https://www.example.com",
+        shortCode: generateShortCode(),
+        ownerId: validUserId,
+        ...overrides,
+      },
+    });
+
+  it("returns 200 and an empty array when the user has no links", async () => {
+    //Act
+    const res = await request(app)
+      .get("/links/")
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(200);
+    expect(res.body.links).toEqual([]);
+  });
+
+  it("returns 200 and only the links owned by the authorized user", async () => {
+    //Arrange
+    const { token: otherUserToken } = await registerAndLogin({
+      email: "otheruser@mail.com",
+      username: "OtherUser",
+      password: "TestTest123!",
+    });
+    const otherUserId = jwt.decode(otherUserToken).userId;
+
+    const ownLink = await createLink({ originalUrl: "https://www.mine.com" });
+    await createLink({
+      originalUrl: "https://www.not-mine.com",
+      ownerId: otherUserId,
+    });
+
+    //Act
+    const res = await request(app)
+      .get("/links/")
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(200);
+    expect(res.body.links).toHaveLength(1);
+    expect(res.body.links[0].id).toBe(ownLink.id);
+    expect(res.body.links[0].originalUrl).toBe("https://www.mine.com");
+  });
+
+  it("returns each link with its shortUrl and without ownerId", async () => {
+    //Arrange
+    const link = await createLink();
+
+    //Act
+    const res = await request(app)
+      .get("/links/")
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(200);
+    expect(res.body.links[0].shortCode).toBe(link.shortCode);
+    expect(res.body.links[0].shortUrl).toBe(
+      `${process.env.APP_BASE_URL}/${link.shortCode}`,
+    );
+    expect(res.body.links[0]).not.toHaveProperty("ownerId");
+  });
+
+  it("returns links ordered from newest to oldest", async () => {
+    //Arrange
+    // Explicit createdAt so the order doesn't depend on insert timing
+    await createLink({
+      originalUrl: "https://www.oldest.com",
+      createdAt: new Date("2026-01-01"),
+    });
+    await createLink({
+      originalUrl: "https://www.newest.com",
+      createdAt: new Date("2026-03-01"),
+    });
+    await createLink({
+      originalUrl: "https://www.middle.com",
+      createdAt: new Date("2026-02-01"),
+    });
+
+    //Act
+    const res = await request(app)
+      .get("/links/")
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(200);
+    expect(res.body.links.map((link) => link.originalUrl)).toEqual([
+      "https://www.newest.com",
+      "https://www.middle.com",
+      "https://www.oldest.com",
+    ]);
+  });
+
+  it.each([
+    ["an invalid token", "Bearer invalidToken", "Unauthorized"],
+    ["no authorization header", undefined, "No token provided."],
+  ])("returns 401 when the request has %s", async (_, header, message) => {
+    //Arrange
+    const req = request(app).get("/links/");
+    if (header) req.set("Authorization", header);
+
+    //Act
+    const res = await req;
+
+    //Assert
+    expect(res.status).toBe(401);
+    expect(res.body.message).toBe(message);
+  });
+});
 
 // describe("GET /links/:id", () => {});
 

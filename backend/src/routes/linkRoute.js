@@ -3,6 +3,7 @@ import { validateUser } from "../middleware/authMiddleware.js";
 import { isValidUrl } from "../utils/validators.js";
 import { prisma } from "../lib/prisma.js";
 import { generateShortCode } from "../utils/shortCode.js";
+import { buildShortUrl } from "../utils/shortUrl.js";
 
 const router = express.Router();
 
@@ -54,16 +55,39 @@ router.post("/", validateUser, async (req, res) => {
       });
     }
 
-    const shortUrl = `${process.env.APP_BASE_URL}/${link.shortCode}`;
-
-    res.status(201).json({ link, shortUrl });
+    res.status(201).json({ link, shortUrl: buildShortUrl(link.shortCode) });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
 
-router.get("/", validateUser, async (req, res) => {});
+router.get("/", validateUser, async (req, res) => {
+  try {
+    const { id } = req.user;
+    const links = await prisma.link.findMany({
+      where: { ownerId: id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        originalUrl: true,
+        shortCode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    res.status(200).json({
+      links: links.map((link) => ({
+        ...link,
+        shortUrl: buildShortUrl(link.shortCode),
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 router.get("/:id", validateUser, async (req, res) => {});
 

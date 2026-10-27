@@ -1,8 +1,31 @@
+import { useState } from "react";
 import Card from "../../../shared/components/Card";
 import Input from "../../../shared/components/Input";
 import Button from "../../../shared/components/Button";
+import ErrorAlert from "../../../shared/components/ErrorAlert";
+import { createLinkRequest } from "../api/api";
 
-function ShortenerBox() {
+function ShortenerBox({ onLinkCreated }) {
+  const [originalUrl, setOriginalUrl] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const data = await createLinkRequest({ originalUrl });
+      onLinkCreated({ ...data.link, shortUrl: data.shortUrl });
+      setOriginalUrl("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not shorten the link.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Card>
       <div className="flex flex-col items-center gap-2 text-center">
@@ -15,9 +38,24 @@ function ShortenerBox() {
         </p>
       </div>
 
-      <Input type="text" placeholder="https://example.com/very/long/link" />
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <ErrorAlert message={error} onDismiss={() => setError("")} />
 
-      <Button>Shorten URL</Button>
+        <Input
+          type="text"
+          placeholder="https://example.com/very/long/link"
+          value={originalUrl}
+          onChange={(e) => setOriginalUrl(e.target.value)}
+        />
+
+        <Button
+          type="submit"
+          isLoading={isSubmitting}
+          disabled={!originalUrl.trim()}
+        >
+          Shorten URL
+        </Button>
+      </form>
     </Card>
   );
 }
