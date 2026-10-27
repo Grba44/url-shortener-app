@@ -1,9 +1,25 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  vi,
+} from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { prisma } from "../src/lib/prisma.js";
 import app from "../src/app.js";
 import { registerAndLogin } from "./helper.js";
+import { generateShortCode } from "../src/utils/shortCode.js";
+
+vi.mock("../src/utils/shortCode.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    generateShortCode: vi.fn(actual.generateShortCode),
+  };
+});
 
 let validToken;
 let validUserId;
@@ -15,6 +31,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  vi.mocked(generateShortCode).mockReset();
   await prisma.link.deleteMany();
 });
 
@@ -146,6 +163,84 @@ describe("POST /links/", () => {
     expect(res.status).toBe(401);
     expect(res.body).toHaveProperty("message");
     expect(res.body.message).toBe("No token provided.");
+  });
+});
+
+describe("POST /links/ short code retry logic", () => {
+  const TAKEN_CODE = "takenCd";
+
+  beforeEach(async () => {
+    await prisma.link.create({
+      data: {
+        originalUrl: "https://www.already-taken.com",
+        shortCode: TAKEN_CODE,
+        ownerId: validUserId,
+      },
+    });
+  });
+
+  it("returns 201 when the first short code collides but the second one is free", async () => {
+    //Arrange
+    vi.mocked(generateShortCode)
+      .mockReturnValueOnce(TAKEN_CODE)
+      .mockReturnValueOnce("freshCd");
+
+    const payload = {
+      originalUrl: "https://www.example.com",
+    };
+
+    //Act
+    const res = await request(app)
+      .post("/links/")
+      .send(payload)
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(201);
+    expect(res.body.link.shortCode).toBe("freshCd");
+    expect(res.body.shortUrl).toBe(`${process.env.APP_BASE_URL}/freshCd`);
+    expect(generateShortCode).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 500 when all three short codes collide", async () => {
+    //Arrange
+    vi.mocked(generateShortCode).mockReturnValue(TAKEN_CODE);
+
+    const payload = {
+      originalUrl: "https://www.example.com",
+    };
+
+    //Act
+    const res = await request(app)
+      .post("/links/")
+      .send(payload)
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(500);
+    expect(res.body.message).toBe(
+      "Could not generate a unique short code. Please try again.",
+    );
+    expect(generateShortCode).toHaveBeenCalledTimes(3);
+    expect(await prisma.link.count()).toBe(1);
+  });
+
+  it("returns 409 without retrying when the collision is on (ownerId, originalUrl)", async () => {
+    //Arrange
+    const payload = {
+      originalUrl: "https://www.already-taken.com",
+    };
+
+    //Act
+    const res = await request(app)
+      .post("/links/")
+      .send(payload)
+      .set("Authorization", `Bearer ${validToken}`);
+
+    //Assert
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("Provided link has already been shortened.");
+    expect(generateShortCode).toHaveBeenCalledTimes(1);
   });
 });
 
